@@ -1,14 +1,18 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import Die from "./components/Die";
-import Confetti from 'react-confetti'
+import Confetti from "react-confetti";
 
 function App() {
-  const [dieValue, setDieValue] = useState(generateAllNewDice());
+  const [dieValue, setDieValue] = useState(() => generateAllNewDice()); //lazy state initialization
+  const buttonRef = useRef(null)
   const gameWon =
     dieValue.every((die) => die.isHeld) &&
     dieValue.every((die) => die.value === dieValue[0].value);
 
+  useEffect(() => {
+    buttonRef.current.focus()
+  }, [gameWon])
   function generateAllNewDice() {
     const newDice = [];
 
@@ -19,11 +23,15 @@ function App() {
     return newDice;
   }
   function rollTheDice() {
-    setDieValue((prevState) =>
-      prevState.map((die) =>
-        !die.isHeld ? { ...die, value: Math.ceil(Math.random() * 6) } : die
-      )
-    );
+    if (!gameWon) {
+      setDieValue((prevState) =>
+        prevState.map((die) =>
+          !die.isHeld ? { ...die, value: Math.ceil(Math.random() * 6) } : die
+        )
+      );
+    } else {
+      setDieValue(generateAllNewDice());
+    }
   }
   function hold(id) {
     setDieValue((prevState) =>
@@ -34,7 +42,14 @@ function App() {
   }
   return (
     <main>
-      {gameWon && <Confetti/>}
+      {gameWon && <Confetti />}
+      <div aria-live="polite" className="sr-only">
+        {gameWon && (
+          <p>
+            Congratulations! You won! Press &#39;New Game&#39; to start again.
+          </p>
+        )}
+      </div> {/* to increase accessibility */}
       <h1 className="title">Tenzies</h1>
       <p className="instructions">
         Roll until all dice are the same. Click each die to freeze it at its
@@ -50,7 +65,7 @@ function App() {
           />
         ))}
       </div>
-      <button className="roll-dice-btn" onClick={rollTheDice}>
+      <button ref={buttonRef} className="roll-dice-btn" onClick={rollTheDice}>
         {gameWon ? "New Game" : "Roll"}
       </button>
     </main>
